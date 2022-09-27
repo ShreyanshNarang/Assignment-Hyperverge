@@ -1,8 +1,9 @@
+#!/bin/bash
 yum update
 yum install httpd -y
 systemctl enable httpd
 systemctl restart httpd
-yum install -y mutt
+yum install -y sendmail
 mkdir /home/devops
 cd /home/devops
 cat > metadata.sh << _EOF_
@@ -18,17 +19,17 @@ echo "</html>"
 _EOF_
 sh metadata.sh >/var/www/html/index.html
 
-cat > monitoring.sh <<__EOF__
-#!/bin/bash
-code=$(echo "$(curl -s -o /dev/null -w "%{http_code}" http://{$(curl "http://169.254.169.254/latest/meta-data/public-ipv4")}/)")
-success=200
-echo "$(echo "success $($success)")"
-echo "$(echo "code $code")"
-if [ $(echo "$("$code")" -ne 200 ]
-then
-        echo "health-check has failed" | mutt -s "Health-Check" narangshreyansh11@gmail.com
-fi
-__EOF__
+{
+echo '#!/bin/bash'
+echo "code=$(echo '$(echo "$(curl -s -o /dev/null -w "%{http_code}" http://{$(curl "http://169.254.169.254/latest/meta-data/public-ipv4")}/)")')"
+echo 'success=200'
+echo 'echo "success $success"'
+echo 'echo "code $code"'
+echo 'if [ $(echo "$code") -ne 200 ]'
+echo "then"
+echo "        echo "health-check has failed" | sendmail -v "narangshreyansh11@gmail.com"
+echo "fi"
+}>monitoring.sh
 
 chmod 777 metadata.sh monitoring.sh
 crontab<<_eof_
